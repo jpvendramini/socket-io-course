@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>           
+</head>
+<body>
+    <style>
+        li{
+            list-style-type: none;
+            background-color: grey;
+            color: white;
+            width: 100px;
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 20px;
+        }
+    </style>
+    <header>
+        <h1>That's my site!</h1>
+    </header>
+    <ul id="messages"></ul>
+    <input id="message" type="text">
+    <button onclick="sendMessage()">Send</button>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var msgs = document.getElementById('messages');
+        var socket = io();
+
+        function sendMessage(){
+            var msg = document.getElementById('message').value;            
+            document.getElementById('message').value = '';   
+            socket.emit('chat message', msg);
+        }
+        socket.on('chat message', (msg)=>{
+            var item = document.createElement('li');
+            item.textContent = msg;
+            msgs.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+    </script>
+</body>
+</html>
