@@ -4,40 +4,91 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>           
+    <title>Custo Calc</title>           
 </head>
 <body>
     <style>
         li{
             list-style-type: none;
-            background-color: grey;
+            background-color: rgb(50, 123, 207);
             color: white;
-            width: 100px;
+            min-width: none;
+            max-width: 200px;
             margin-bottom: 5px;
             padding: 10px;
             border-radius: 20px;
+            font-size: large;
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            word-wrap: break-word;
+            height: max-content;
         }
-    </style>
-    <header>
-        <h1>That's my site!</h1>
-    </header>
-    <ul id="messages"></ul>
-    <input id="message" type="text">
-    <button onclick="sendMessage()">Send</button>
+        #display{
+            position: fixed;            
+            bottom: 0;    
+            left: 0;
+            width: 100%;   
+            background-color: rgb(107 174 230 / 70%); 
+            padding: 10px;    
+        }
+        #display input{
+            border-radius: 20px;
+            padding: 10px;
+            font-size: large;
+            width: 80%;
+        }
+        #container{
+            margin-bottom: 80px;
+        }
+        #container span{
+            position: relative;
+            background-color: rgb(126, 240, 177);
+            border-radius: 10px;
+            padding: 5px;
+            font-size: x-small; 
+            left: 223px;
+            top: -35px;
+        }
+    </style>    
+    
+    <input type="text" id="userName" placeholder="User">
+    <div id="container"> 
+        <ul id="messages"></ul>
+    </div>
+    <footer id="display">
+        <input id="message" type="text" placeholder="Type some text here...">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="getCurrentTime()">TIME NOW!!</button>
+    </footer>
+
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var msgs = document.getElementById('messages');
         var socket = io();
 
-        function sendMessage(){
-            var msg = document.getElementById('message').value;            
-            document.getElementById('message').value = '';   
-            socket.emit('chat message', msg);
+        function getCurrentTime(){
+            var date = new Date();
+            var now = date.getDate()+'/'+ date.getMonth() + ' - ' +  date.getHours() + ':' + date.getMinutes();
+            console.log(now);
+            return now;
         }
-        socket.on('chat message', (msg)=>{
+
+        function sendMessage(){
+            var msg = document.getElementById('message').value;
+            if(msg != ""){
+                var time = getCurrentTime();
+                document.getElementById('message').value = '';
+                socket.emit('chat message', msg, time);
+            }else{
+                alert('Type something...');
+            }
+        }
+        socket.on('chat message', (msg, time)=>{
             var item = document.createElement('li');
+            var item2 = document.createElement('span');
             item.textContent = msg;
+            item2.textContent = time;            
             msgs.appendChild(item);
+            msgs.appendChild(item2);
             window.scrollTo(0, document.body.scrollHeight);
         });
     </script>
