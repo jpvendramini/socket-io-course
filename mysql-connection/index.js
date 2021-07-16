@@ -11,18 +11,19 @@ app.get('/', (req, res)=>{
 });
 
 var db = mysql.createConnection({
-    host: 'compressinfo.ddns.net',
-    port: 13695,
-    user: 'sa',
+    host: '192.168.15.117',
+    port: 3306,
+    user: 'root',
     database: 'node',
-    password:'@Compress1'    
+    password:'admin123',
+    connectTimeout:300000 
 });
 
 db.connect((error)=>{
     if(error) {
         console.log(error);
     }else{
-        console.log("Connected!!");
+        console.log("DB:Connected!!");
     }
 });
 
@@ -34,7 +35,7 @@ var notes = [];
 var isInitiated = false;
 
 io.on('connection', (socket) => {
-    console.log('User connected :)');
+    console.log('Socket: User connected :)');
     socket.on('disconnect', ()=>{
         console.log('User disconnected!! :(');
         isInitiated = false;
