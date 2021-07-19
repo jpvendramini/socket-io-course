@@ -1,5 +1,13 @@
 <h1>It's working</h1>
+<ul id="usuariosUl"></ul>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    var socket = io('/');    
+    var socket = io('http://localhost:9000/');    
+    var users = document.getElementById('usuariosUl');
+    socket.on('messagesFromUser',(usuarios)=>{
+        var item = document.createElement('li');
+        item.textContent = usuarios.content + ' - ' + usuarios.time;
+        users.appendChild(item);
+    });    
+    socket.emit('getMessages', 1);    
 </script>
