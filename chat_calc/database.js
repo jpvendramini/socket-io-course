@@ -16,30 +16,29 @@ io.on('connection',(socket)=>{
     console.log('User connected!');
     socket.on('disconnect',()=>{
         console.log('User disconnected...');
-    });    
-    if(!isInitialized){
-        db.query('SELECT * FROM user')
-        .on('result', (data)=>{                    
-            socket.emit('currentUsers', data);
-        });            
-    }
-    socket.on('getMessages',(userId)=>{
+        isInitiated = false;
+    });        
+
+    socket.on('messagesFromUser',(userId)=>{
         db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
         FROM user
         INNER JOIN message
         ON user.idUser = message.idUser
         WHERE message.idUser LIKE '%${userId}%'`).on('result',(data)=>{
-            socket.emit('messagesFromUser', data)        
+            io.emit('messagesFromUser', data)        
         });
-    })
+    });
+
     socket.on('insertMessage',(msg)=>{
+        dbInsertMessage(msg._id, msg._msg, msg._tipoBalao,msg._time);           
         console.log(msg);
+        io.emit('messagesFromUser', msg);
     })
 });
 
 server.listen(9000, ()=>{console.log('Listening on *9000')});
 
-//DATABASE CONNECTION
+//DATABASE CONNECTION MYSQL
 db = mysql.createConnection({
     host: 'localhost',
     port: 3307,
@@ -58,7 +57,7 @@ db.connect((error)=>{
 })
 
 
-//INSERÇÃO E APRESENTAÇÂOD E USUÁRIOS
+//Inserir novo usuário (é verificado se ele já está cadastrado)
 dbInsertUser = (nome)=>{
     db.query(`INSERT INTO user (nome)
     SELECT * FROM(SELECT '${nome}') AS tmp
@@ -72,6 +71,7 @@ dbInsertUser = (nome)=>{
     });
 };
 
+//Apresentar todos funcionários
 dbGetUsers = ()=>{
     db.query('SELECT * FROM user').on('result', (data)=>{        
         console.log(data);
@@ -79,12 +79,13 @@ dbGetUsers = ()=>{
 };
 
 
-//INSERÇÃO E APRESENTAÇÃO DE MENSAGENS
+//Inserir mensagens
 dbInsertMessage = (idUser, content, tipo, time, seem = false)=>{
     db.query(`INSERT INTO message(idUser, content, tipo, time, seem) 
-    VALUES(${idUser},'${content}','${tipo}','${time}',${seem})`);
+    VALUES(${idUser},"${content}",'${tipo}','${time}',${seem})`);
 };
 
+//Apresentar mensagens
 dbGetMessagesFromUser = (idUser)=>{
     db.query(`SELECT user.nome, message.tipo, message.content, message.time
     FROM user

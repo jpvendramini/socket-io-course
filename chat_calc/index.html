@@ -1,13 +1,21 @@
 <h1>It's working</h1>
 <ul id="usuariosUl"></ul>
+<input type="text" id="messages">
+<button onclick="insertSocketMessage()">Send</button>
+
 <script src="/socket.io/socket.io.js"></script>
 <script>
     var socket = io('http://localhost:9000/');    
-    var users = document.getElementById('usuariosUl');
-    socket.on('messagesFromUser',(usuarios)=>{
-        var item = document.createElement('li');
-        item.textContent = usuarios.content + ' - ' + usuarios.time;
-        users.appendChild(item);
-    });    
-    socket.emit('getMessages', 1);    
+    function insertSocketMessage(userId=3, users, tipo = 'balaoCalc', time='12:30'){
+        var users = document.getElementById('messages').value;
+        console.log(users);
+        let message ={
+            _id: userId,
+            _msg: users,
+            _tipoBalao: tipo,
+            _time:time
+        };
+        this.socket.emit('insertMessage', message);    
+        document.getElementById('messages').value = '';    
+    }
 </script>
