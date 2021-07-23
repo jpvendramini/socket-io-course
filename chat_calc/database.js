@@ -19,20 +19,21 @@ io.on('connection',(socket)=>{
         isInitiated = false;
     });        
 
-    socket.on('messagesFromUser',(userId)=>{
+    socket.on('send-chat-id',(userId)=>{
         db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
         FROM user
         INNER JOIN message
         ON user.idUser = message.idUser
         WHERE message.idUser LIKE '%${userId}%'`).on('result',(data)=>{
-            io.emit('messagesFromUser', data)        
+            io.emit('messagesFromUser', data) 
+            console.log(data);       
         });
     });
 
     socket.on('insertMessage',(msg)=>{
         dbInsertMessage(msg._id, msg._msg, msg._tipoBalao,msg._time);           
         console.log(msg);
-        io.emit('messagesFromUser', msg);
+        io.emit('new-chat-messages', msg);
     })
 });
 
