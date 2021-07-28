@@ -53,7 +53,7 @@ server.listen(9000, ()=>{console.log('Listening on *9000')});
 
 
 
-//DATABASE CONNECTION MYSQL
+/********************DATABASE CONNECTION MYSQL*********************/
 db = mysql.createConnection({
     host: 'localhost',
     port: 3307,
