@@ -17,7 +17,7 @@ io.on('connection',(socket)=>{
     socket.on('disconnect',()=>{
         console.log('User disconnected...');
         isInitiated = false;
-    });        
+    });
 
     socket.on('send-chat-id',(userId)=>{
         db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
@@ -26,18 +26,32 @@ io.on('connection',(socket)=>{
         ON user.idUser = message.idUser
         WHERE message.idUser LIKE '%${userId}%'`).on('result',(data)=>{
             io.emit('messagesFromUser', data) 
-            console.log(data);       
+            // console.log(data);       
         });
     });
 
     socket.on('insertMessage',(msg)=>{
-        dbInsertMessage(msg._id, msg._msg, msg._tipoBalao,msg._time);           
-        console.log(msg);
+        dbInsertMessage(msg._id, msg._msg, msg._tipoBalao, msg._time);
         io.emit('new-chat-messages', msg);
-    })
+        console.log(msg);
+    });
+
+    socket.on('createUser', (newUser)=>{
+        dbInsertUser(newUser);
+        console.log(newUser);
+    });
+
+    socket.on('getUserId', (username)=>{
+        db.query(`SELECT user.idUser FROM user
+        WHERE user.nome = ${username};`).on('result',(data)=>{
+            socket.emit('getUserId', data);
+        });
+    });
 });
 
 server.listen(9000, ()=>{console.log('Listening on *9000')});
+
+
 
 //DATABASE CONNECTION MYSQL
 db = mysql.createConnection({
@@ -66,8 +80,10 @@ dbInsertUser = (nome)=>{
     LIMIT 1;`).on('result',(data)=>{
         if(data.affectedRows == 0){
             console.log('Username already taken :(');
+            return 0;
         }else{
             console.log('User registered!!');
+            return 1;
         }        
     });
 };
@@ -113,4 +129,10 @@ dbUpdateLastSeem = (idUser)=>{
     db.query(`UPDATE message
     SET message.seem = true
     WHERE message.idUser = '${idUser}';`);
+};
+
+//Encontrar id do usuário
+dbGetUserId = (nome)=>{
+    return db.query(`SELECT user.idUser FROM user
+    WHERE user.nome = ${nome};`);
 };
