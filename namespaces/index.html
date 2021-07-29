@@ -1,0 +1,22 @@
+<input type="text" placeholder="room" id="room">
+<input type="text" placeholder="Type message..." id="display">
+<button onclick="sendMessage()">Send</button>
+<ul class="displayMessages"></ul>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io("http://localhost:3010");    
+
+    function sendMessage(){
+        let quarto = document.getElementById('room').value;
+        let display = document.getElementById('display').value;
+                        
+        socket.emit('message', ({message:display, room:quarto}));
+        socket.on('new_message', (data)=>{
+            console.log(`Incoming message: ${data}`);
+        });
+
+        document.getElementById('display').value = '';        
+    }
+
+</script>
