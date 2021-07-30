@@ -19,14 +19,16 @@ io.on('connection',(socket)=>{
         isInitiated = false;
     });
 
-    socket.on('send-chat-id',(userId)=>{
+    socket.on('send-chat-id',({room, userId})=>{        
+        console.log(`UserId ${userId}`);        
         db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
         FROM user
         INNER JOIN message
         ON user.idUser = message.idUser
-        WHERE message.idUser LIKE '%${userId}%'`).on('result',(data)=>{
-            io.emit('messagesFromUser', data) 
-            // console.log(data);       
+        WHERE message.idUser LIKE "%${userId}%"`).on('result',(data)=>{
+            socket.join(userId);
+            io.in(userId).emit('messagesFromUser', data); 
+            console.log(data);
         });
     });
 
@@ -43,9 +45,25 @@ io.on('connection',(socket)=>{
 
     socket.on('getUserId', (username)=>{
         db.query(`SELECT user.idUser FROM user
-        WHERE user.nome = ${username};`).on('result',(data)=>{
+        WHERE user.nome = "${username}";`).on('result',(data)=>{
             socket.emit('getUserId', data);
         });
+    });
+
+    socket.on('verifyUsers', user=>{
+        db.query(`SELECT user.nome FROM user 
+        WHERE user.nome = "${user}";`).on('result', data=>{
+            socket.emit('verifyUsers', data);            
+            console.log(data);
+        });
+    });
+
+    /********************** Rooms Socket Io ***************************/
+    socket.on('new_message', ({room, msg})=>{
+        dbInsertMessage(msg._id, msg._msg, msg._tipoBalao, msg._time);
+        socket.join(room);
+        io.in(room).emit('new_message', msg);
+        console.log(`${msg._msg} from the room ${room}`);        
     });
 });
 
@@ -75,13 +93,15 @@ db.connect((error)=>{
 //Inserir novo usuário (é verificado se ele já está cadastrado)
 dbInsertUser = (nome)=>{
     db.query(`INSERT INTO user (nome)
-    SELECT * FROM(SELECT '${nome}') AS tmp
-    WHERE NOT EXISTS(SELECT nome FROM user WHERE nome = '${nome}')
+    SELECT * FROM(SELECT "${nome}") AS tmp
+    WHERE NOT EXISTS(SELECT nome FROM user WHERE nome = "${nome}")
     LIMIT 1;`).on('result',(data)=>{
         if(data.affectedRows == 0){
+            var repetido = `"${nome}#"`;
+            db.query(`INSERT INTO user (nome) VALUES(${repetido})`);            
             console.log('Username already taken :(');
             return 0;
-        }else{
+        }else{    
             console.log('User registered!!');
             return 1;
         }        
