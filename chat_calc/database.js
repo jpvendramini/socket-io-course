@@ -19,17 +19,21 @@ io.on('connection',(socket)=>{
         isInitiated = false;
     });
 
-    socket.on('send-chat-id',({room, userId})=>{        
-        console.log(`UserId ${userId}`);        
-        db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
-        FROM user
-        INNER JOIN message
-        ON user.idUser = message.idUser
-        WHERE message.idUser LIKE "%${userId}%"`).on('result',(data)=>{
-            socket.join(userId);
-            io.in(userId).emit('messagesFromUser', data); 
-            console.log(data);
-        });
+    socket.on('send-chat-id',({userId})=>{        
+        console.log(`UserId ${userId}`);       
+        db.query(`SELECT user.idUser FROM user WHERE user.nome = "${userId}";`)
+        .on('result',(data)=>{
+            console.log('That is the user ID: ' + data.idUser);
+            db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
+            FROM user
+            INNER JOIN message
+            ON user.idUser = message.idUser
+            WHERE message.idUser LIKE "%${data.idUser}%"`).on('result',(data)=>{
+                socket.join(data.idUser);
+                io.in(data.idUser).emit('messagesFromUser', data); 
+                console.log(data);
+            });
+        }); 
     });
 
     socket.on('insertMessage',(msg)=>{
@@ -43,27 +47,24 @@ io.on('connection',(socket)=>{
         console.log(newUser);
     });
 
-    socket.on('getUserId', (username)=>{
-        db.query(`SELECT user.idUser FROM user
-        WHERE user.nome = "${username}";`).on('result',(data)=>{
-            socket.emit('getUserId', data);
-        });
-    });
 
-    socket.on('verifyUsers', user=>{
-        db.query(`SELECT user.nome FROM user 
-        WHERE user.nome = "${user}";`).on('result', data=>{
-            socket.emit('verifyUsers', data);            
-            console.log(data);
+    socket.on('join', (room)=>{
+        db.query(`SELECT user.idUser FROM user WHERE user.nome = "${room}";`)
+        .on('result',(data)=>{
+            socket.join(data.idUser);
         });
     });
 
     /********************** Rooms Socket Io ***************************/
-    socket.on('new_message', ({room, msg})=>{
-        dbInsertMessage(msg._id, msg._msg, msg._tipoBalao, msg._time);
-        socket.join(room);
-        io.in(room).emit('new_message', msg);
-        console.log(`${msg._msg} from the room ${room}`);        
+    socket.on('new_message', ({room, data})=>{
+        db.query(`SELECT user.idUser FROM user WHERE user.nome = "${room}";`)
+        .on('result', (userId)=>{
+            db.query(`INSERT INTO message(idUser, content, tipo, time, seem) 
+            VALUES(${userId.idUser},"${data._msg}",'${data._tipoBalao}','${data._time}',false)`);            
+            socket.join(userId.idUser);
+            console.log(`${data._msg} from the room ${userId.idUser}`);        
+            io.in(userId.idUser).emit('new_message', (data));            
+        });
     });
 });
 
@@ -74,9 +75,9 @@ server.listen(9000, ()=>{console.log('Listening on *9000')});
 /********************DATABASE CONNECTION MYSQL*********************/
 db = mysql.createConnection({
     host: 'localhost',
-    port: 3307,
+    port: 3306,
     user: 'root',
-    password:'admin123',    
+    password:'12345',    
     database: 'chatcalc'    
 });
 
@@ -96,9 +97,7 @@ dbInsertUser = (nome)=>{
     SELECT * FROM(SELECT "${nome}") AS tmp
     WHERE NOT EXISTS(SELECT nome FROM user WHERE nome = "${nome}")
     LIMIT 1;`).on('result',(data)=>{
-        if(data.affectedRows == 0){
-            var repetido = `"${nome}#"`;
-            db.query(`INSERT INTO user (nome) VALUES(${repetido})`);            
+        if(data.affectedRows == 0){         
             console.log('Username already taken :(');
             return 0;
         }else{    

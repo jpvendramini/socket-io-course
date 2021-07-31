@@ -6,7 +6,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
     var socket = io('http://localhost:9000/');    
-    function insertSocketMessage(userId=11, users, tipo = 'balaoCalc', time='12:30'){
+    function insertSocketMessage(userId='8989898989898', tipo = 'balaoCalc', time='12:30'){
         var users = document.getElementById('messages').value;
         console.log(users);
         let message ={
@@ -15,7 +15,10 @@
             _tipoBalao: tipo,
             _time:time
         };
-        this.socket.emit('insertMessage', message);    
+        socket.emit('new_message', ({room:userId, data:message}));    
+        socket.on('new_message', data=>{
+            console.log(data);
+        });
         document.getElementById('messages').value = '';    
     }
 </script>
