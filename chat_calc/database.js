@@ -47,7 +47,6 @@ io.on('connection',(socket)=>{
         console.log(newUser);
     });
 
-
     socket.on('join', (room)=>{
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${room}";`)
         .on('result',(data)=>{
@@ -87,15 +86,15 @@ io.on('connection',(socket)=>{
     });
 });
 
-server.listen(9000, ()=>{console.log('Listening on *9000')});
+server.listen(80, ()=>{console.log('Listening on *80')});
 
 
 /********************DATABASE CONNECTION MYSQL*********************/
 db = mysql.createConnection({
-    host: 'localhost',
-    port: 3307,
-    user: 'root',
-    password:'admin123',    
+    host: '162.215.215.98',
+    port: 3306,
+    user: 'usercalc',
+    password:'&Lu#PI&%nkpI',    
     database: 'chatcalc'    
 });
 
