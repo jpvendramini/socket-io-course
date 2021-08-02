@@ -1,12 +1,14 @@
 <h1>It's working</h1>
 <ul id="usuariosUl"></ul>
 <input type="text" id="messages">
-<button onclick="insertSocketMessage()">Send</button>
+<button onclick="insertSocketMessage()">Send</button><br>
+<ul id="usuarios"></ul>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    var usuarios = document.querySelector('#usuarios');
     var socket = io('http://localhost:9000/');    
-    function insertSocketMessage(userId='8989898989898', tipo = 'balaoCalc', time='12:30'){
+    function insertSocketMessage(userId='111111111111', tipo = 'balaoCalc', time='12:30'){
         var users = document.getElementById('messages').value;
         console.log(users);
         let message ={
@@ -21,4 +23,5 @@
         });
         document.getElementById('messages').value = '';    
     }
+
 </script>

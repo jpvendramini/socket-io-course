@@ -55,6 +55,26 @@ io.on('connection',(socket)=>{
         });
     });
 
+
+    socket.on('get-users',()=>{
+        db.query('SELECT * FROM user').on('result', data=>{                ;        
+            socket.emit('get-users', data);
+        });
+    });
+
+
+    socket.emit('greetings', 'Greetings from the server side!!');
+
+    socket.on('get-last-message', (user)=>{
+        db.query(`SELECT message.content, message.seem FROM message
+        WHERE message.idUser = '${user}'
+        ORDER BY message.idMessage DESC
+        LIMIT 1;`).on('result',(data)=>{
+            socket.emit('get-last-message', data)            
+        })
+    });
+        
+
     /********************** Rooms Socket Io ***************************/
     socket.on('new_message', ({room, data})=>{
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${room}";`)
@@ -109,9 +129,7 @@ dbInsertUser = (nome)=>{
 
 //Apresentar todos funcionários
 dbGetUsers = ()=>{
-    db.query('SELECT * FROM user').on('result', (data)=>{        
-        console.log(data);
-    });
+    db.query('SELECT * FROM user');
 };
 
 
