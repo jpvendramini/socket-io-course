@@ -55,15 +55,11 @@ io.on('connection',(socket)=>{
         });
     });
 
-
     socket.on('get-users',()=>{
-        db.query('SELECT * FROM user').on('result', data=>{                ;        
+        db.query('SELECT * FROM user').on('result', data=>{        
             socket.emit('get-users', data);
         });
-    });
-
-
-    socket.emit('greetings', 'Greetings from the server side!!');
+    });    
 
     socket.on('get-last-message', (user)=>{
         db.query(`SELECT message.content, message.seem FROM message
@@ -73,7 +69,10 @@ io.on('connection',(socket)=>{
             socket.emit('get-last-message', data)            
         })
     });
-        
+
+    socket.on('update-last-seem', (idUser)=>{
+        dbUpdateLastSeem(idUser);
+    });
 
     /********************** Rooms Socket Io ***************************/
     socket.on('new_message', ({room, data})=>{
@@ -91,13 +90,12 @@ io.on('connection',(socket)=>{
 server.listen(9000, ()=>{console.log('Listening on *9000')});
 
 
-
 /********************DATABASE CONNECTION MYSQL*********************/
 db = mysql.createConnection({
     host: 'localhost',
-    port: 3306,
+    port: 3307,
     user: 'root',
-    password:'12345',    
+    password:'admin123',    
     database: 'chatcalc'    
 });
 
@@ -117,13 +115,13 @@ dbInsertUser = (nome)=>{
     SELECT * FROM(SELECT "${nome}") AS tmp
     WHERE NOT EXISTS(SELECT nome FROM user WHERE nome = "${nome}")
     LIMIT 1;`).on('result',(data)=>{
-        if(data.affectedRows == 0){         
+        if(data.affectedRows == 0){
             console.log('Username already taken :(');
             return 0;
-        }else{    
+        }else{
             console.log('User registered!!');
             return 1;
-        }        
+        }
     });
 };
 
