@@ -7,6 +7,8 @@ const io = new Server(server);
 
 const mysql = require('mysql');
 
+const PORT = 80;
+
 app.get('/', (req, res)=>{
     res.sendFile(__dirname+'/index.html');
 });
@@ -86,8 +88,18 @@ io.on('connection',(socket)=>{
     });
 });
 
-server.listen(80, ()=>{console.log('Listening on *80')});
+server.listen(PORT, ()=>{console.log(`Listening on *${PORT}`)});
 
+process.on('uncaughtException',(reason,p)=>{
+    console.error(reason, 'Unhandled Rejection at Promise', p);
+})
+.on('uncaughtException', err => {
+    console.error(err, 'Uncaught Exception thrown');
+    process.exit(1);
+});
+process.on('SIGTERM',(res)=>{
+    console.log(res);
+});
 
 /********************DATABASE CONNECTION MYSQL*********************/
 db = mysql.createConnection({
@@ -104,6 +116,7 @@ db.connect((error)=>{
         console.log(error);
     }else{
         console.log('DB connected ;)');
+        db.query(`INSERT INTO user (nome) VALUES('9812981982');`);
     }
 })
 

@@ -7,7 +7,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
     var usuarios = document.querySelector('#usuarios');
-    var socket = io('http://localhost:9000/');    
+    var socket = io('http://localhost:80/');    
     function insertSocketMessage(userId='111111111111', tipo = 'balaoCalc', time='12:30'){
         var users = document.getElementById('messages').value;
         console.log(users);
