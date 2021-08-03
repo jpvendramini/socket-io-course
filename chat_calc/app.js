@@ -21,8 +21,8 @@ io.on('connection',(socket)=>{
         isInitiated = false;
     });
 
-    socket.on('send-chat-id',({userId})=>{        
-        console.log(`UserId ${userId}`);       
+    socket.on('send-chat-id',({userId})=>{
+        console.log(`UserId ${userId}`);
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${userId}";`)
         .on('result',(data)=>{
             console.log('That is the user ID: ' + data.idUser);
@@ -35,7 +35,23 @@ io.on('connection',(socket)=>{
                 io.in(data.idUser).emit('messagesFromUser', data); 
                 console.log(data);
             });
-        }); 
+        });
+    });
+
+    socket.on('getAllMessages', userId=>{        
+        db.query(`SELECT user.idUser FROM user WHERE user.nome = "${userId}";`)
+        .on('result',(data)=>{
+            console.log('That is the user ID: ' + data.idUser);
+            db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
+            FROM user
+            INNER JOIN message
+            ON user.idUser = message.idUser
+            WHERE message.idUser LIKE "%${data.idUser}%"`).on('result',(data)=>{
+                socket.join(data.idUser);
+                io.emit('getAllMessages', data); 
+                console.log(data);
+            });
+        });
     });
 
     socket.on('insertMessage',(msg)=>{
@@ -73,7 +89,7 @@ io.on('connection',(socket)=>{
 
     socket.on('update-last-seem', (idUser)=>{
         dbUpdateLastSeem(idUser);
-    });
+    });    
 
     /********************** Rooms Socket Io ***************************/
     socket.on('new_message', ({room, data})=>{
@@ -85,6 +101,11 @@ io.on('connection',(socket)=>{
             console.log(`${data._msg} from the room ${userId.idUser}`);        
             io.in(userId.idUser).emit('new_message', (data));            
         });
+    });
+
+
+    socket.on('GETMESSAGE', ()=>{
+        socket.emit('GETMESSAGE', 'HELLO THERE!!!');
     });
 });
 
