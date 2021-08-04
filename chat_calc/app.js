@@ -21,43 +21,37 @@ io.on('connection',(socket)=>{
         isInitiated = false;
     });
 
-    socket.on('send-chat-id',({userId})=>{
-        console.log(`UserId ${userId}`);
+    socket.on('send-chat-id',({userId})=>{        
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${userId}";`)
-        .on('result',(data)=>{
-            console.log('That is the user ID: ' + data.idUser);
+        .on('result',(data)=>{            
             db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
             FROM user
             INNER JOIN message
             ON user.idUser = message.idUser
             WHERE message.idUser LIKE "%${data.idUser}%"`).on('result',(data)=>{
                 socket.join(data.idUser);
-                io.in(data.idUser).emit('messagesFromUser', data); 
-                console.log(data);
+                io.in(data.idUser).emit('messagesFromUser', data);                 
             });
         });
     });
 
-    socket.on('getAllMessages', userId=>{        
+    socket.on('getAllMessages', userId=>{
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${userId}";`)
-        .on('result',(data)=>{
-            console.log('That is the user ID: ' + data.idUser);
+        .on('result',(data)=>{                        
             db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
             FROM user
             INNER JOIN message
             ON user.idUser = message.idUser
             WHERE message.idUser LIKE "%${data.idUser}%"`).on('result',(data)=>{
                 socket.join(data.idUser);
-                io.emit('getAllMessages', data); 
-                console.log(data);
+                io.in(data.idUser).emit('getAllMessages', data);                                
             });
         });
     });
 
     socket.on('insertMessage',(msg)=>{
         dbInsertMessage(msg._id, msg._msg, msg._tipoBalao, msg._time);
-        io.emit('new-chat-messages', msg);
-        console.log(msg);
+        io.emit('new-chat-messages', msg);        
     });
 
     socket.on('createUser', (newUser)=>{
@@ -83,29 +77,31 @@ io.on('connection',(socket)=>{
         WHERE message.idUser = '${user}'
         ORDER BY message.idMessage DESC
         LIMIT 1;`).on('result',(data)=>{
-            socket.emit('get-last-message', data)            
+            socket.emit('get-last-message', data)
         })
     });
 
     socket.on('update-last-seem', (idUser)=>{
         dbUpdateLastSeem(idUser);
-    });    
+    });
+
+
+    socket.on('get out', (usuario)=>{
+        db.query(`SELECT user.idUser FROM user WHERE user.nome = "${usuario}";`)
+        .on('result', (userId)=>{
+            socket.leave(userId.idUser);
+        });
+    });
 
     /********************** Rooms Socket Io ***************************/
     socket.on('new_message', ({room, data})=>{
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${room}";`)
         .on('result', (userId)=>{
             db.query(`INSERT INTO message(idUser, content, tipo, time, seem) 
-            VALUES(${userId.idUser},"${data._msg}",'${data._tipoBalao}','${data._time}',false)`);            
-            socket.join(userId.idUser);
-            console.log(`${data._msg} from the room ${userId.idUser}`);        
-            io.in(userId.idUser).emit('new_message', (data));            
+            VALUES(${userId.idUser},"${data._msg}",'${data._tipoBalao}','${data._time}',false)`);
+            socket.join(userId.idUser);            
+            io.in(userId.idUser).emit('new_message', (data)); //enviar apenas para room do usuário
         });
-    });
-
-
-    socket.on('GETMESSAGE', ()=>{
-        socket.emit('GETMESSAGE', 'HELLO THERE!!!');
     });
 });
 
@@ -131,16 +127,13 @@ db = mysql.createConnection({
     database: 'chatcalc'    
 });
 
-
 db.connect((error)=>{
     if(error){
         console.log(error);
     }else{
-        console.log('DB connected ;)');
-        db.query(`INSERT INTO user (nome) VALUES('9812981982');`);
+        console.log('DB connected ;)');        
     }
 })
-
 
 //Inserir novo usuário (é verificado se ele já está cadastrado)
 dbInsertUser = (nome)=>{
@@ -163,7 +156,6 @@ dbGetUsers = ()=>{
     db.query('SELECT * FROM user');
 };
 
-
 //Inserir mensagens
 dbInsertMessage = (idUser, content, tipo, time, seem = false)=>{
     db.query(`INSERT INTO message(idUser, content, tipo, time, seem) 
@@ -176,8 +168,7 @@ dbGetMessagesFromUser = (idUser)=>{
     FROM user
     INNER JOIN message
     ON user.idUser = message.idUser
-    WHERE message.idUser LIKE '%${idUser}%'`).on('result',(data)=>{
-        console.log(data);
+    WHERE message.idUser LIKE '%${idUser}%'`).on('result',(data)=>{        
     });
 };
 
@@ -187,8 +178,7 @@ dbGetLastMessage = (idUser)=>{
     db.query(`SELECT message.content, message.seem FROM message
     WHERE message.idUser = '${idUser}'
     ORDER BY message.idMessage DESC
-    LIMIT 1;`).on('result',(data)=>{
-        console.log(data);
+    LIMIT 1;`).on('result',(data)=>{        
     })
 };
 
