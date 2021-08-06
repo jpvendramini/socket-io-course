@@ -54,7 +54,7 @@ io.on('connection',(socket)=>{
         db.query(`SELECT * FROM user`)
         .on('result', (data)=>{
             db.query(`SELECT message.*,
-            user.nome FROM message left join user on user.idUser = message.idUser
+            user.nome, user.displayNome FROM message left join user on user.idUser = message.idUser
             Where message.idUser= "${data.idUser}"
             order by message.time DESC LIMIT 1`)
             .on('result', (data)=>{
@@ -64,9 +64,9 @@ io.on('connection',(socket)=>{
     });
 
 
-    socket.on('createUser', (newUser)=>{
-        dbInsertUser(newUser);
-        console.log(newUser);                
+    socket.on('createUser', (newUser, displayNome)=>{
+        dbInsertUser(newUser, displayNome);
+        console.log(newUser, displayNome);                
     });
 
     socket.on('join', (room)=>{
@@ -85,7 +85,7 @@ io.on('connection',(socket)=>{
             ORDER BY message.idMessage DESC
             LIMIT 1;`).on('result',(data)=>{
                 socket.emit('get-last-message', data);
-                showMessages();                               
+                showMessages();
             });
         });
     });
@@ -108,6 +108,8 @@ io.on('connection',(socket)=>{
             /* Refresh users */      
             if(data._tipoBalao != 'balaoUser'){
                 showMessages();
+            }else{
+                showMessagesUser();
             }
         });
     });
@@ -128,14 +130,29 @@ process.on('SIGTERM',(res)=>{
 
 
 function showMessages(){
+    io.emit('LIMPA ARRAY', true);
     db.query(`SELECT * FROM user`)
     .on('result', (data)=>{
         db.query(`SELECT message.*,
-        user.nome FROM message left join user on user.idUser = message.idUser
+        user.nome, user.displayNome FROM message left join user on user.idUser = message.idUser
         Where message.idUser= "${data.idUser}"
         order by message.time DESC LIMIT 1`)
         .on('result', (data)=>{
             io.emit('getUsers', data);
+        });
+    });
+}
+
+function showMessagesUser(){
+    io.emit('LIMPA ARRAY', true);
+    db.query(`SELECT * FROM user`)
+    .on('result', (data)=>{
+        db.query(`SELECT message.*,
+        user.nome, user.displayNome FROM message left join user on user.idUser = message.idUser
+        Where message.idUser= "${data.idUser}"
+        order by message.time DESC LIMIT 1`)
+        .on('result', (data)=>{
+            io.emit('getUsersUsers', data);
         });
     });
 }
@@ -159,9 +176,9 @@ db.connect((error)=>{
 })
 
 //Inserir novo usuário (é verificado se ele já está cadastrado)
-dbInsertUser = (nome)=>{
-    db.query(`INSERT INTO user (nome)
-    SELECT * FROM(SELECT "${nome}") AS tmp
+dbInsertUser = (nome, displayNome)=>{
+    db.query(`INSERT INTO user (nome, displayNome)
+    SELECT * FROM(SELECT "${nome}", "${displayNome}") AS tmp
     WHERE NOT EXISTS(SELECT nome FROM user WHERE nome = "${nome}")
     LIMIT 1;`).on('result',(data)=>{
         if(data.affectedRows == 0){
