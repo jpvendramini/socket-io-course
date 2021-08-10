@@ -7,7 +7,7 @@ const io = new Server(server);
 
 const mysql = require('mysql');
 
-const PORT = 80;
+const PORT = 2222;
 
 app.get('/', (req, res)=>{
     res.sendFile(__dirname+'/index.html');
@@ -54,19 +54,19 @@ io.on('connection',(socket)=>{
         db.query(`SELECT * FROM user`)
         .on('result', (data)=>{
             db.query(`SELECT message.*,
-            user.nome, user.displayNome FROM message left join user on user.idUser = message.idUser
+            user.nome, user.displayNome, user.phoneNumber FROM message left join user on user.idUser = message.idUser
             Where message.idUser= "${data.idUser}"
             order by message.time DESC LIMIT 1`)
             .on('result', (data)=>{
+                socket.join()
                 io.emit('getUsers', data);
             });
         });
     });
 
-
-    socket.on('createUser', (newUser, displayNome)=>{
-        dbInsertUser(newUser, displayNome);
-        console.log(newUser, displayNome);                
+    socket.on('createUser', (newUser, displayNome, phoneNumber)=>{
+        dbInsertUser(newUser, displayNome, phoneNumber);
+        console.log(newUser, displayNome, phoneNumber);                
     });
 
     socket.on('join', (room)=>{
@@ -96,21 +96,42 @@ io.on('connection',(socket)=>{
             socket.leave(userId.idUser);
         });
     });
-
-    /********************** Rooms Socket Io ***************************/
+    
     socket.on('new_message', ({room, data})=>{        
-        db.query(`SELECT user.idUser FROM user WHERE user.nome = "${room}";`)
+        db.query(`SELECT user.idUser, user.nome, user.displayNome FROM user WHERE user.nome = "${room}";`)
         .on('result', (userId)=>{
             db.query(`INSERT INTO message(idUser, content, tipo, time, seem) 
             VALUES(${userId.idUser},"${data._msg}",'${data._tipoBalao}','${data._time}',${data._seem})`);
-            socket.join(userId.idUser);            
-            io.in(userId.idUser).emit('new_message', (data)); //enviar apenas para room do usuário
-            /* Refresh users */      
+            socket.join(userId.idUser);    
+            db.query(`SELECT message.idMessage 
+            FROM message WHERE message.idUser = ${userId.idUser} 
+            ORDER BY message.idMessage DESC LIMIT 1;`)
+            .on('result', id=>{
+                console.log(id);
+                console.log(data);                
+                io.in(userId.idUser).emit('new_message', ({data, id})); //enviar apenas para room do usuário
+            });
+            /* Send data trought database */      
             if(data._tipoBalao != 'balaoUser'){
                 showMessages();
             }else{
                 showMessagesUser();
             }
+            /* Send data from socket */
+            io.emit('new message from socket', data);
+        });
+    });
+
+    socket.on('deleteMessage', (idMessage)=>{
+        db.query(`DELETE FROM message
+        WHERE message.idMessage = ${idMessage}`);        
+    });
+
+    socket.on('deleteAllMessages', (idUser)=>{
+        db.query(`SELECT user.idUser FROM user WHERE user.nome = "${idUser}";`)
+        .on('result', data=>{
+            db.query(`DELETE FROM message
+            WHERE message.idUser = ${data.idUser}`);
         });
     });
 });
@@ -160,10 +181,10 @@ function showMessagesUser(){
 
 /********************DATABASE CONNECTION MYSQL*********************/
 db = mysql.createConnection({
-    host: '162.215.215.98',
+    host: 'localhost',
     port: 3306,
-    user: 'usercalc',
-    password:'&Lu#PI&%nkpI',    
+    user: 'root',
+    password:'',    
     database: 'chatcalc'    
 });
 
@@ -176,11 +197,12 @@ db.connect((error)=>{
 })
 
 //Inserir novo usuário (é verificado se ele já está cadastrado)
-dbInsertUser = (nome, displayNome)=>{
-    db.query(`INSERT INTO user (nome, displayNome)
-    SELECT * FROM(SELECT "${nome}", "${displayNome}") AS tmp
+dbInsertUser = (nome, displayNome, phoneNumber)=>{
+    db.query(`INSERT INTO user (nome, displayNome, phoneNumber)
+    SELECT * FROM(SELECT "${nome}", "${displayNome}", "${phoneNumber}") AS tmp
     WHERE NOT EXISTS(SELECT nome FROM user WHERE nome = "${nome}")
     LIMIT 1;`).on('result',(data)=>{
+        console.log(nome + displayNome + phoneNumber);
         if(data.affectedRows == 0){
             console.log('Username already taken :(');
             return 0;
