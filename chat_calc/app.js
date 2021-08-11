@@ -7,7 +7,7 @@ const io = new Server(server);
 
 const mysql = require('mysql');
 
-const PORT = 2222;
+const PORT = 80;
 
 app.get('/', (req, res)=>{
     res.sendFile(__dirname+'/index.html');
@@ -35,7 +35,11 @@ io.on('connection',(socket)=>{
         });
     });
 
-    socket.on('getAllMessages', userId=>{
+    socket.on('joinRoom', usuario=>{
+        socket.join(usuario);
+    });
+
+    socket.on('getAllMessages', (userId, usuario)=>{
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${userId}";`)
         .on('result',(data)=>{
             db.query(`SELECT message.idMessage, user.nome, message.tipo, message.content, message.time
@@ -43,14 +47,14 @@ io.on('connection',(socket)=>{
             INNER JOIN message
             ON user.idUser = message.idUser
             WHERE message.idUser LIKE "%${data.idUser}%"`).on('result',(data)=>{
-                socket.join(data.idUser);
-                io.in(data.idUser).emit('getAllMessages', data);
+                socket.join(usuario);
+                io.in(usuario).emit('getAllMessages', data);
             }); 
         });
     });
 
     //FUNÇÃO QUE RETORNA O CLIENTE, SUA ÚLTIMA MENSAGEM, HORÁRIO E LASTSEEM
-    socket.on('getUsers', ()=>{
+    socket.on('getUsers', (user)=>{
         db.query(`SELECT * FROM user`)
         .on('result', (data)=>{
             db.query(`SELECT message.*,
@@ -58,8 +62,8 @@ io.on('connection',(socket)=>{
             Where message.idUser= "${data.idUser}"
             order by message.time DESC LIMIT 1`)
             .on('result', (data)=>{
-                socket.join()
-                io.emit('getUsers', data);
+                socket.join(user)
+                io.in(user).emit('getUsers', data);//Enviar mensagem para quarto do funcionário
             });
         });
     });
@@ -96,8 +100,11 @@ io.on('connection',(socket)=>{
             socket.leave(userId.idUser);
         });
     });
+
+    const dados = [{email:'appcargo.joao@gmail.com'}, {email:'marcos'}, {email:'davi'}];
     
-    socket.on('new_message', ({room, data})=>{        
+    socket.on('new_message', ({room, data})=>{     
+        console.log(data);   
         db.query(`SELECT user.idUser, user.nome, user.displayNome FROM user WHERE user.nome = "${room}";`)
         .on('result', (userId)=>{
             db.query(`INSERT INTO message(idUser, content, tipo, time, seem) 
@@ -107,18 +114,17 @@ io.on('connection',(socket)=>{
             FROM message WHERE message.idUser = ${userId.idUser} 
             ORDER BY message.idMessage DESC LIMIT 1;`)
             .on('result', id=>{
-                console.log(id);
-                console.log(data);                
+                // for(dado in dados){
+                //     io.in(dado.email).emit('new_message', ({data, id}));
+                // }
                 io.in(userId.idUser).emit('new_message', ({data, id})); //enviar apenas para room do usuário
             });
-            /* Send data trought database */      
+            /* Send data trought database */
             if(data._tipoBalao != 'balaoUser'){
                 showMessages();
             }else{
-                showMessagesUser();
+                showMessagesUser();                
             }
-            /* Send data from socket */
-            io.emit('new message from socket', data);
         });
     });
 
@@ -155,7 +161,7 @@ function showMessages(){
     db.query(`SELECT * FROM user`)
     .on('result', (data)=>{
         db.query(`SELECT message.*,
-        user.nome, user.displayNome FROM message left join user on user.idUser = message.idUser
+        user.nome, user.displayNome, user.phoneNumber FROM message left join user on user.idUser = message.idUser
         Where message.idUser= "${data.idUser}"
         order by message.time DESC LIMIT 1`)
         .on('result', (data)=>{
@@ -169,7 +175,7 @@ function showMessagesUser(){
     db.query(`SELECT * FROM user`)
     .on('result', (data)=>{
         db.query(`SELECT message.*,
-        user.nome, user.displayNome FROM message left join user on user.idUser = message.idUser
+        user.nome, user.displayNome, user.phoneNumber FROM message left join user on user.idUser = message.idUser
         Where message.idUser= "${data.idUser}"
         order by message.time DESC LIMIT 1`)
         .on('result', (data)=>{
@@ -183,8 +189,8 @@ function showMessagesUser(){
 db = mysql.createConnection({
     host: 'localhost',
     port: 3306,
-    user: 'root',
-    password:'',    
+    user: "root",
+    password:"n7WWcn2mUCItkwXs",    
     database: 'chatcalc'    
 });
 
