@@ -1,27 +1,22 @@
-<h1>It's working</h1>
-<ul id="usuariosUl"></ul>
-<input type="text" id="messages">
-<button onclick="insertSocketMessage()">Send</button><br>
-<ul id="usuarios"></ul>
+<html>
+  <head>
+  </head>
+  <body>
+    <h1>Hi there friend</h1>    
+    <input type="text" id="messageId" name="message"/>
+    <button onclick="sendMessage()">Send</button>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    var usuarios = document.querySelector('#usuarios');
-    var socket = io('http://localhost:80/');    
-    function insertSocketMessage(userId='111111111111', tipo = 'balaoCalc', time='12:30'){
-        var users = document.getElementById('messages').value;
-        console.log(users);
-        let message ={
-            _id: userId,
-            _msg: users,
-            _tipoBalao: tipo,
-            _time:time
-        };
-        socket.emit('new_message', ({room:userId, data:message}));    
-        socket.on('new_message', data=>{
-            console.log(data);
-        });
-        document.getElementById('messages').value = '';    
-    }
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        socket.on('welcome', data=>{console.log(data);})
+        function sendMessage(){
+            var message = document.getElementById('messageId').value;
+            console.log(message);
+            socket.emit('message', message);
+            document.getElementById('messageId').value = '';
+        }
+    </script>
+  </body>
 
-</script>
+</html>

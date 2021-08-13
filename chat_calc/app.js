@@ -1,8 +1,19 @@
 const express = require('express');
 const app = express();
-const http = require('http');
-const server = http.createServer(app);
+const path = require('path');
+const fs = require('fs');
+const https = require('https');
+
+const server = https.createServer(
+    {
+        key: fs.readFileSync(path.join(__dirname, 'cert', 'key.pem')),
+        cert: fs.readFileSync(path.join(__dirname, 'cert', 'cert.pem'))        
+    },
+    app
+);
+
 const {Server} = require('socket.io');
+
 const io = new Server(server);
 
 const mysql = require('mysql');
@@ -20,6 +31,14 @@ io.on('connection',(socket)=>{
         console.log('User disconnected...');
         isInitiated = false;
     });
+
+
+    socket.emit('welcome','Welcome to the websocket server!!');
+    socket.on('message',(msg)=>{
+        console.log('Message from user: '+msg);
+    });
+
+    socket.emit('new message test', 'Hi there from the server side!!');
 
     socket.on('send-chat-id',({userId})=>{        
         db.query(`SELECT user.idUser FROM user WHERE user.nome = "${userId}";`)
@@ -190,8 +209,8 @@ db = mysql.createConnection({
     host: 'localhost',
     port: 3306,
     user: "root",
-    password:"n7WWcn2mUCItkwXs",    
-    database: 'chatcalc'    
+    password:"n7WWcn2mUCItkwXs",
+    database: 'chatcalc'
 });
 
 db.connect((error)=>{
